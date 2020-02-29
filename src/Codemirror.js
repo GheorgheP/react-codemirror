@@ -41,7 +41,6 @@ const CodeMirror = createReactClass({
 		};
 	},
 	componentWillMount () {
-		this.componentWillReceiveProps = debounce(this.componentWillReceiveProps, 0);
 		if (this.props.path) {
 			console.error('Warning: react-codemirror: the `path` prop has been changed to `name`');
 		}
@@ -62,24 +61,30 @@ const CodeMirror = createReactClass({
 			this.codeMirror.toTextArea();
 		}
 	},
-	componentWillReceiveProps: function (nextProps) {
+	componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
 		if (this.codeMirror && nextProps.value !== undefined && nextProps.value !== this.props.value && normalizeLineEndings(this.codeMirror.getValue()) !== normalizeLineEndings(nextProps.value)) {
-			if (this.props.preserveScrollPosition) {
-				var prevScrollPosition = this.codeMirror.getScrollInfo();
-				this.codeMirror.setValue(nextProps.value);
-				this.codeMirror.scrollTo(prevScrollPosition.left, prevScrollPosition.top);
-			} else {
-				this.codeMirror.setValue(nextProps.value);
-			}
+			this.setValue(nextProps.value);
 		}
 		if (typeof nextProps.options === 'object') {
-			for (let optionName in nextProps.options) {
-				if (nextProps.options.hasOwnProperty(optionName)) {
-					this.setOptionIfChanged(optionName, nextProps.options[optionName]);
-				}
-			}
+			this.setOptions(nextProps.options);
 		}
 	},
+	setValue: debounce(function(value) {
+		if (this.props.preserveScrollPosition) {
+			var prevScrollPosition = this.codeMirror.getScrollInfo();
+			this.codeMirror.setValue(value);
+			this.codeMirror.scrollTo(prevScrollPosition.left, prevScrollPosition.top);
+		} else {
+			this.codeMirror.setValue(value);
+		}
+	}, 0),
+	setOptions: debounce(function (options) {
+		for (var optionName in options) {
+			if (options.hasOwnProperty(optionName)) {
+				this.setOptionIfChanged(optionName, options[optionName]);
+			}
+		}
+	}, 0),
 	setOptionIfChanged (optionName, newValue) {
  		const oldValue = this.codeMirror.getOption(optionName);
  		if (!isEqual(oldValue, newValue)) {
